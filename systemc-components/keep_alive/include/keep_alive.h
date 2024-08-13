@@ -20,15 +20,16 @@ class keep_alive : public sc_core::sc_module
 {
     SCP_LOGGER();
 
-public:
     gs::async_event keep_alive_event;
 
+public:
     keep_alive(sc_core::sc_module_name name): sc_core::sc_module(name)
     {
         SCP_DEBUG(()) << "keep_alive: Constructor";
         keep_alive_event.async_attach_suspending();
     }
-    ~keep_alive() {}
+
+    void unalive() { keep_alive_event.async_detach_suspending(); }
 };
 
 extern "C" void module_register();

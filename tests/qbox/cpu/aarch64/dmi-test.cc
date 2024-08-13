@@ -18,6 +18,8 @@
 #include "cortex-a53.h"
 #include "qemu-instance.h"
 
+#include "keep_alive.h"
+
 /*
  * ARM Cortex-A53 DMI test.
  *
@@ -97,6 +99,9 @@ protected:
     std::vector<bool> m_dmi_enabled;
     std::vector<int> m_dmi_ok;
 
+    uint32_t m_done_counter;
+    keep_alive m_health;
+
     bool last_access_was_io(int cpuid)
     {
         TEST_ASSERT(cpuid < p_num_cpu);
@@ -108,7 +113,8 @@ protected:
     void disable_dmi(int cpuid) { m_dmi_enabled[cpuid] = false; }
 
 public:
-    CpuArmCortexA53DmiTest(const sc_core::sc_module_name& n): CpuArmTestBench<cpu_arm_cortexA53, CpuTesterDmi>(n)
+    CpuArmCortexA53DmiTest(const sc_core::sc_module_name& n)
+        : CpuTestBench<cpu_arm_cortexA53, CpuTesterDmi>(n), m_done_counter(0), m_health("health")
     {
         char buf[1024];
         SCP_DEBUG(SCMOD) << "CpuArmCortexA53DmiTest constructor";
@@ -179,6 +185,10 @@ public:
         m_state[cpuid] = State((int(m_state[cpuid]) + 1) % 4);
 
         m_last_access_io[cpuid] = false;
+
+        if (m_tester.get_buf_value(cpuid) == m_num_write_per_cpu) {
+            m_done_counter++;
+        }
     }
 
     void dmi_access(uint64_t addr)
@@ -201,6 +211,12 @@ public:
         case CpuTesterDmi::SOCKET_DMI:
             dmi_access(addr);
             break;
+        }
+
+        if (m_done_counter >= p_num_cpu) {
+            SCP_WARN(SCMOD) << "We don't actually want to do this!!! This is just a workaround for a problem with KVM. "
+                               "Take a look at the git log for more information";
+            m_health.unalive();
         }
     }
 
@@ -247,7 +263,5 @@ public:
         }
     }
 };
-
-constexpr const char* CpuArmCortexA53DmiTest::FIRMWARE;
 
 int sc_main(int argc, char* argv[]) { return run_testbench<CpuArmCortexA53DmiTest>(argc, argv); }

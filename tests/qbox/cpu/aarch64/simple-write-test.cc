@@ -20,6 +20,8 @@
 #include "cortex-a53.h"
 #include "qemu-instance.h"
 
+#include "keep_alive.h"
+
 /*
  * Simple ARM Cortex-A53 write test.
  *
@@ -65,14 +67,15 @@ public:
 
 protected:
     std::vector<int> m_writes;
-    gs::async_event m_aev;
+
+    uint32_t m_done_counter;
+    keep_alive m_health;
 
 public:
     CpuArmCortexA53SimpleWriteTest(const sc_core::sc_module_name& n)
-        : CpuArmTestBench<cpu_arm_cortexA53, CpuTesterMmio>(n), m_aev("aev")
+        : CpuArmTestBench<cpu_arm_cortexA53, CpuTesterMmio>(n), m_done_counter(0), m_health("health")
     {
         char buf[1024];
-        m_aev.async_attach_suspending();
         std::snprintf(buf, sizeof(buf), FIRMWARE, CpuTesterMmio::MMIO_ADDR, NUM_WRITES);
         set_firmware(buf);
 
@@ -94,11 +97,16 @@ public:
         TEST_ASSERT(data == m_writes[cpuid]);
 
         m_writes[cpuid]++;
-        for (int i = 0; i < p_num_cpu; i++) {
-            if (m_writes[i] < NUM_WRITES) return;
+
+        if (m_writes.at(cpuid) >= NUM_WRITES) {
+            m_done_counter++;
         }
-        m_aev.async_detach_suspending();
-        sc_core::sc_stop();
+
+        if (m_done_counter >= p_num_cpu) {
+            SCP_WARN(SCMOD) << "We don't actually want to do this!!! This is just a workaround for a problem with KVM. "
+                               "Take a look at the git log for more information";
+            m_health.unalive();
+        }
     }
 
     virtual void end_of_simulation() override
@@ -110,7 +118,5 @@ public:
         }
     }
 };
-
-constexpr const char* CpuArmCortexA53SimpleWriteTest::FIRMWARE;
 
 int sc_main(int argc, char* argv[]) { return run_testbench<CpuArmCortexA53SimpleWriteTest>(argc, argv); }

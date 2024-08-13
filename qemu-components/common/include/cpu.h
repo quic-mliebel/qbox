@@ -281,6 +281,12 @@ protected:
          */
 
         SCP_TRACE(())("Prepare run");
+
+        /*
+         * We don't like this code!
+         * This is a workaround for KVM to work. As soon as we can find a
+         * better way to deal with KVM, we should improve this!
+         */
         if (m_inst.get_tcg_mode() == QemuInstance::TCG_SINGLE) {
             while (!m_inst.can_run() && !m_finished) {
                 wait_for_work();
