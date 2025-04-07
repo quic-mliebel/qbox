@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
-project(qbox VERSION 2.0)
+cmake_minimum_required(VERSION 3.16...4.0 FATAL_ERROR)
+
+project(qbox VERSION 4.4.8)
+
+add_subdirectory(src/libqemu-cxx)
 
 ##############################################
 # ----- fetch GreenSocs cmake BOILERPLATE
