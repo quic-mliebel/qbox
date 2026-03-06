@@ -42,13 +42,8 @@ else
             MAJOR_VERSION=$(sw_vers -productVersion | cut -d "." -f 1)
             readonly MAJOR_VERSION
 
-            if [ "${MAJOR_VERSION}" = "15" ]; then
-                brew install asio bison cmake jpeg libelf libslirp asio meson ninja python3 sdl2
-                pip install --user numpy pexpect
-            elif [ "${MAJOR_VERSION}" = "14" ]; then
-                brew install asio bison cmake jpeg libelf libslirp asio meson ninja python3 sdl2
-                pip install --user numpy pexpect
-            fi
+            brew install asio bison cmake jpeg libelf libslirp meson ninja python3 sdl2
+            pip install --user numpy pexpect
 
             brew tap quic/quic https://github.com/quic/homebrew-quic.git
             brew install quic/quic/virglrenderer
